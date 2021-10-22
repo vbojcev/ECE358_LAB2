@@ -17,30 +17,37 @@ class node {
 
   public:
 
-    vector<float> queue;  //The frame queue only needs to be a queue of timestamps
-    
-    int front;
-
-    node(int popTime, int arriveRate) {
+    node(int popTime, int arriveRate) { //This is the only way that a node can be constructed.
 
        float currTime = 0;
-       front = 0;
 
        while (currTime < popTime) {
          currTime += expVar(arriveRate);
-         queue.push_back(currTime);
+         frameQueue.pushback(currTime);
        }
     }
 
-    int front() {return front;}
+    int next() {
+      if (frameQueue.empty()) {
+        return 200000;
+      } else {
+        return frameQueue.first();
+      }
+    }
 
-    void deQueue() {++front;}
+    void deQueue() {frameQueue.pop();}
 
+    bool isEmpty() {return frameQueue.empty();}
 
+  private:
+
+  int i;  //Backoff counter
+
+  queue<float> frameQueue;  //The frame queue only needs to be a queue of timestamps
 
 };
 
-bool compareTime (const node& i,const node& j) {  //This initializes the comparison condition for the sorting function
+bool compareTime (const node i,const node j) {  //This initializes the comparison condition for the sorting function
   return (i.queue.front() < j.queue.front());
 }
 
@@ -48,7 +55,7 @@ int findMin(vector<node> network) {
   int min = 0;
 
   for (int i = 0; i < network.size(); ++i) {
-    if (network[i].queue[network[i].getFront()] < network[min].queue[network[min].getFront()]) {
+    if (network[i].next() < network[min].next()) {
       min = i;
     }
   }
