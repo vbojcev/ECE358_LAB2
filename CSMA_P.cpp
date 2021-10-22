@@ -19,19 +19,40 @@ class node {
 
     vector<float> queue;  //The frame queue only needs to be a queue of timestamps
     
+    int front;
+
     node(int popTime, int arriveRate) {
+
        float currTime = 0;
-       
+       front = 0;
+
        while (currTime < popTime) {
          currTime += expVar(arriveRate);
          queue.push_back(currTime);
        }
     }
 
+    int front() {return front;}
+
+    void deQueue() {++front;}
+
+
+
 };
 
 bool compareTime (const node& i,const node& j) {  //This initializes the comparison condition for the sorting function
   return (i.queue.front() < j.queue.front());
+}
+
+int findMin(vector<node> network) {
+  int min = 0;
+
+  for (int i = 0; i < network.size(); ++i) {
+    if (network[i].queue[network[i].getFront()] < network[min].queue[network[min].getFront()]) {
+      min = i;
+    }
+  }
+  return min;
 }
 
 int main(int argc, char* argv[]) {
