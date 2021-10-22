@@ -1,14 +1,15 @@
 #include <iostream>  //For debugging
 #include <cmath>  //For logarithm
 #include <vector>  //Used only as variable-size array (not explicit queue)
-#include <algorithm>  //Used to sort the events in order of occurence
+#include <algorithm>
 #include <time.h>  //Used to set the seed of the random number generator
-#include <fstream>  //Used to output to a CSV file
+#include <fstream>  //Used to output to a file
 #include <climits>
+#include <queue>
 
 using namespace std;
 
-float expVar(float rate) {
+float expVar(float rate) {  //Exponentially-distributed value generator; exactly the same as LAB1's.
   return (float)-(1/rate)*log(1-((float)(rand()%1000)/1000));
 }
 
@@ -17,7 +18,6 @@ class node {
   public:
 
     vector<float> queue;  //The frame queue only needs to be a queue of timestamps
-
     
     node(int popTime, int arriveRate) {
        float currTime = 0;
@@ -29,6 +29,10 @@ class node {
     }
 
 };
+
+bool compareTime (const node& i,const node& j) {  //This initializes the comparison condition for the sorting function
+  return (i.queue.front() < j.queue.front());
+}
 
 int main(int argc, char* argv[]) {
 
@@ -53,5 +57,6 @@ int main(int argc, char* argv[]) {
     LAN.push_back(node(T, A));
   }
   
+  float simTime = 0;
 
 }
