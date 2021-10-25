@@ -9,11 +9,26 @@
 
 using namespace std;
 
+int N;  //Number of nodes
+float A;  //Average arrival rate for each node's buffer
+int T;  //Simulation time
+int R;  //Speed, in bit/s
+int L;  //Packet lengths, in bits
+int D;  //Distance between nodes on channel, in metres
+int S;  //Propagation speed, in m/s
+
 float expVar(float rate) {  //Exponentially-distributed value generator; exactly the same as LAB1's.
   return (float)-(1/rate)*log(1-((float)(rand()%1000)/1000));
 }
 
 class node {
+
+  private:
+
+    int i = 0;  //Backoff counter
+    dequeue<float> frameQueue;  //The frame queue only needs to be a queue of timestamps
+    int k = 0;  //Iterator variable
+
 
   public:
 
@@ -23,37 +38,48 @@ class node {
 
        while (currTime < popTime) {
          currTime += expVar(arriveRate);
-         frameQueue.push(currTime);
+         frameQueue.push_back(currTime);
        }
     }
 
     int next() {
       if (frameQueue.empty()) {
-        return 200000;
+        return T + 10;  //A value much higher than any reasonable simulation time
       } else {
         return frameQueue.front();
       }
     }
 
-    void deQueue() {frameQueue.pop();}
+    void deQueue() {
+      frameQueue.pop_front();
+      i = 0;
+      }
 
     bool isEmpty() {return frameQueue.empty();}
 
-  private:
+    bool backoff(float propTime) {
+      ++i;
 
-  int i;  //Backoff counter
-  queue<float> frameQueue;  //The frame queue only needs to be a queue of timestamps
+      if (i > 10) {
+        frameQueue.pop_front();
+        i = 0;
+        return false;
+      } else {
+        k = 0;
+        frameQueue[0] = (rand() % (pow(2, i)-2) + 1)/R + propTime; //Returns random number in [1,(2^i)-1], inclusive
+        ++k;
+        while (frameQueue[k] <= frameQueue[0]) {
+          frameQueue[k] = frameQueue[0];
+        }
+        return true;
+      }
 
-
-
+    }
 
 };
 
-bool compareTime (node i, node j) {  //This initializes the comparison condition for the sorting function
-  return (i.next() < j.next());
-}
 
-int findMin(vector<node> network) {
+int findMin(vector<node> network) { //This function finds the index of the node with the next smallest arrival time
   int min = 0;
 
   for (int i = 0; i < network.size(); ++i) {
@@ -70,13 +96,13 @@ int main(int argc, char* argv[]) {
 
   srand(initTime);  //Initialize seed for pseudorandom uniform generator
 
-  int N = stoi(argv[1]);  //Number of nodes
-  float A = stof(argv[2]);  //Average arrival rate for each node's buffer
-  int T = stoi(argv[3]);
-  int R = 1000000;  //Speed, in bit/s
-  int L = 1500;  //Packet lengths, in bits
-  int D = 10;  //Distance between nodes on channel, in metres
-  int S = 200000000;  //Propagation speed, in m/s
+  N = stoi(argv[1]);  //Number of nodes
+  A = stof(argv[2]);  //Average arrival rate for each node's buffer
+  T = stoi(argv[3]);
+  R = 1000000;  //Speed, in bit/s
+  L = 1500;  //Packet lengths, in bits
+  D = 10;  //Distance between nodes on channel, in metres
+  S = 200000000;  //Propagation speed, in m/s
 
   int numAttempts = 0;
   int numSuccesses = 0;
