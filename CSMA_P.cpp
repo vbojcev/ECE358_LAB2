@@ -23,7 +23,7 @@ class node {
 
        while (currTime < popTime) {
          currTime += expVar(arriveRate);
-         frameQueue.pushback(currTime);
+         frameQueue.push(currTime);
        }
     }
 
@@ -31,7 +31,7 @@ class node {
       if (frameQueue.empty()) {
         return 200000;
       } else {
-        return frameQueue.first();
+        return frameQueue.front();
       }
     }
 
@@ -42,13 +42,13 @@ class node {
   private:
 
   int i;  //Backoff counter
-
   queue<float> frameQueue;  //The frame queue only needs to be a queue of timestamps
+
 
 };
 
-bool compareTime (const node i,const node j) {  //This initializes the comparison condition for the sorting function
-  return (i.queue.front() < j.queue.front());
+bool compareTime (node i, node j) {  //This initializes the comparison condition for the sorting function
+  return (i.next() < j.next());
 }
 
 int findMin(vector<node> network) {
@@ -75,16 +75,16 @@ int main(int argc, char* argv[]) {
   int L = 1500;  //Packet lengths, in bits
   int D = 10;  //Distance between nodes on channel, in metres
   int S = 200000000;  //Propagation speed, in m/s
-  
+
   int numAttempts = 0;
   int numSuccesses = 0;
-  
+
   vector<node> LAN;
-  
+
   for (int i = 0; i < N; i++) {  //Pre-simulation, populate the queues of all nodes until T seconds.
     LAN.push_back(node(T, A));
   }
-  
+
   float simTime = 0;
 
 }
