@@ -45,6 +45,8 @@ class node {
   queue<float> frameQueue;  //The frame queue only needs to be a queue of timestamps
 
 
+
+
 };
 
 bool compareTime (node i, node j) {  //This initializes the comparison condition for the sorting function
@@ -86,5 +88,13 @@ int main(int argc, char* argv[]) {
   }
 
   float simTime = 0;
+
+  int sender = findMin(LAN); //The index of the node trying to send
+
+  while ((LAN[sender].next()) < T) {
+
+
+    sender = findMin(LAN);
+  }
 
 }
