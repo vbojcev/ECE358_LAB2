@@ -17,8 +17,8 @@ int L;  //Packet lengths, in bits
 int D;  //Distance between nodes on channel, in metres
 int S;  //Propagation speed, in m/s
 
-float expVar(float rate) {  //Exponentially-distributed value generator; exactly the same as LAB1's.
-  return (float)-(1/rate)*log(1-((float)(rand()%1000)/1000));
+double expVar(float rate) {  //Exponentially-distributed value generator; exactly the same as LAB1's.
+  return (double)-(1/rate)*log(1-((double)(rand()%1000)/1000));
 }
 
 class node {
@@ -26,15 +26,15 @@ class node {
   private:
 
     int i = 0;  //Backoff counter
-    dequeue<float> frameQueue;  //The frame queue only needs to be a queue of timestamps
+    dequeue<double> frameQueue;  //The frame queue only needs to be a queue of timestamps, unlike LAB1 where we had event objects
     int k = 0;  //Iterator variable
 
 
   public:
 
-    node(int popTime, int arriveRate) { //This is the only way that a node can be constructed.
+    node(int popTime, float arriveRate) { //This is the only way that a node can be constructed.
 
-       float currTime = 0;
+       double currTime = 0;
 
        while (currTime < popTime) {
          currTime += expVar(arriveRate);
@@ -42,22 +42,22 @@ class node {
        }
     }
 
-    int next() {
+    double next() {
       if (frameQueue.empty()) {
-        return T + 10;  //A value much higher than any reasonable simulation time
+        return T + 10;  //A value higher than the simulation time to indicate queue is empty numerically
       } else {
         return frameQueue.front();
       }
     }
 
-    void deQueue() {
+    void send() { //De-queue the next frame successfully and therefore also reset the collision counter.
       frameQueue.pop_front();
       i = 0;
-      }
+    }
 
     bool isEmpty() {return frameQueue.empty();}
 
-    bool backoff(float propTime) {
+    bool backOff(double propTime) {  //We need to input a "base time" to account for the propagation delay.
       ++i;
 
       if (i > 10) {
@@ -66,13 +66,17 @@ class node {
         return false;
       } else {
         k = 0;
-        frameQueue[0] = (rand() % (pow(2, i)-2) + 1)/R + propTime; //Returns random number in [1,(2^i)-1], inclusive
+        frameQueue[0] = (double)(rand() % (pow(2, i)-2) + 1)/R + propTime; //Returns random number in [1,(2^i)-1], inclusive
         ++k;
         while (frameQueue[k] <= frameQueue[0]) {
           frameQueue[k] = frameQueue[0];
         }
         return true;
       }
+
+    }
+
+    bool wait(double transTime) { //Makes the node wait until the channel is clear of another transmission
 
     }
 
@@ -104,8 +108,11 @@ int main(int argc, char* argv[]) {
   D = 10;  //Distance between nodes on channel, in metres
   S = 200000000;  //Propagation speed, in m/s
 
+  double propTime = (double)D/S;  //Propagation time between two adjacent nodes, pre-computed.
+
   int numAttempts = 0;
   int numSuccesses = 0;
+  int numDropped = 0;
 
   vector<node> LAN;
 
@@ -113,14 +120,46 @@ int main(int argc, char* argv[]) {
     LAN.push_back(node(T, A));
   }
 
-  float simTime = 0;
+  double simTime = 0;
 
   int sender = findMin(LAN); //The index of the node trying to send
 
+  int maxProp = 0;  //Maximum distance (in tens of metres) from sender to a colliding node. This is used as the base backoff time for each node in the collision event.
+
+  vector<int> collidedNodes;  //Indexes of nodes that will experience a collision.
+
   while ((LAN[sender].next()) < T) {
 
+    maxProp = 0;
 
-    sender = findMin(LAN);
+    for (int g = 0; g < LAN.size(); g++) {
+
+      if (LAN[g].next() <= (LAN[sender].next() + (abs(sender - g) * propTime))) { //Case that the first bit will arrive at a node while that node is sending (collision)
+
+        collidedNodes.push_back(g);
+
+        if (abs(sender - g) > maxProp) {
+          maxProp = abs(sender - g);
+        }
+
+      }
+
+    }
+
+    for (int g = 0; g < collidedNodes.size(); g++) {  //Initiate the backoff procedure for each node caught in the collision
+      if (!(LAN[g].backOff((double)maxProp * propTime))) {  //This must be in a loop separate from the collision detection loop because we don't know the timestampt to start the backoff until we know all nodes involved in the collision!
+        ++numDropped;
+      }
+    }
+
+  //if maxProp == 0 after the collision detection loop, it must be the case that there is no collision at all.
+
+  
+
+    collidedNodes.clear();
+    sender = findMin(LAN);  //Find the attempting sender for the next loop
   }
 
+
+  return 0;
 }
