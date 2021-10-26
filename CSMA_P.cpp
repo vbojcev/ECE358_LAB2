@@ -44,7 +44,7 @@ class node {
 
     double next() {
       if (frameQueue.empty()) {
-        return T + 10;  //A value higher than the simulation time to indicate queue is empty numerically
+        return T + 10;  //A value higher than the simulation time to indicate queue is empty numerically and avoid null errors.
       } else {
         return frameQueue.front();
       }
@@ -58,6 +58,7 @@ class node {
     bool isEmpty() {return frameQueue.empty();}
 
     bool backOff(double propTime) {  //We need to input a "base time" to account for the propagation delay.
+
       ++i;
 
       if (i > 10) {
@@ -67,17 +68,30 @@ class node {
       } else {
         k = 0;
         frameQueue[0] = (double)(rand() % (pow(2, i)-2) + 1)/R + propTime; //Returns random number in [1,(2^i)-1], inclusive
-        ++k;
-        while (frameQueue[k] <= frameQueue[0]) {
-          frameQueue[k] = frameQueue[0];
+        while (k < frameQueue.size()) {
+          ++k;
+          if (frameQueue[k] <= frameQueue[0]) {
+            frameQueue[k] = frameQueue[0];
+          }
         }
+        k = 0;
         return true;
       }
 
     }
 
-    bool wait(double transTime) { //Makes the node wait until the channel is clear of another transmission
-
+    bool wait(double waitTime) { //Makes the node wait until the channel is clear of another transmission
+      k = 0;
+      frameQueue[0] = waitTime; //Returns random number in [1,(2^i)-1], inclusive
+      ++k;
+      while (k < frameQueue.size()) {
+        ++k;
+        if (frameQueue[k] <= frameQueue[0]) {
+          frameQueue[k] = frameQueue[0];
+        }
+      }
+      k = 0;
+      return true;
     }
 
 };
@@ -109,6 +123,7 @@ int main(int argc, char* argv[]) {
   S = 200000000;  //Propagation speed, in m/s
 
   double propTime = (double)D/S;  //Propagation time between two adjacent nodes, pre-computed.
+  double transTime = (double)L/R;
 
   int numAttempts = 0;
   int numSuccesses = 0;
@@ -147,14 +162,22 @@ int main(int argc, char* argv[]) {
     }
 
     for (int g = 0; g < collidedNodes.size(); g++) {  //Initiate the backoff procedure for each node caught in the collision
-      if (!(LAN[g].backOff((double)maxProp * propTime))) {  //This must be in a loop separate from the collision detection loop because we don't know the timestampt to start the backoff until we know all nodes involved in the collision!
+      if (!(LAN[collidedNodes[g]].backOff((double)maxProp * propTime))) {  //This must be in a loop separate from the collision detection loop because we don't know the timestampt to start the backoff until we know all nodes involved in the collision!
         ++numDropped;
       }
     }
 
-  //if maxProp == 0 after the collision detection loop, it must be the case that there is no collision at all.
+    //if maxProp == 0 after the collision detection loop, it must be the case that there is no collision at all.
 
-  
+    if (!maxProp) { //must be the case if there is no collision
+
+      for (int g = 0; g < LAN.size(); g++) {
+        if ((LAN[g].next() <= LAN[sender].next() + (abs(g - sender)*propTime) + transTime) && g != sender) {  //Case where packets arrive at nodes when channel is busy.
+          LAN[g].wait(LAN[sender].next() + (abs(g - sender) + transTime));
+        }
+      }
+
+    }
 
     collidedNodes.clear();
     sender = findMin(LAN);  //Find the attempting sender for the next loop
