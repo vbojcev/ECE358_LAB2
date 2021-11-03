@@ -1,188 +1,93 @@
-#include <iostream>  //For debugging
-#include <cmath>  //For logarithm
-#include <vector>  //Used only as variable-size array (not explicit queue)
-#include <algorithm>
-#include <time.h>  //Used to set the seed of the random number generator
-#include <fstream>  //Used to output to a file
-#include <climits>
+#include <iostream>
+#include <vector>
 #include <queue>
+#include "node.h"
 
 using namespace std;
 
-int N;  //Number of nodes
-float A;  //Average arrival rate for each node's buffer
-int T;  //Simulation time
-int R;  //Speed, in bit/s
-int L;  //Packet lengths, in bits
-int D;  //Distance between nodes on channel, in metres
-int S;  //Propagation speed, in m/s
-
-double expVar(float rate) {  //Exponentially-distributed value generator; exactly the same as LAB1's.
-  return (double)-(1/rate)*log(1-((double)(rand()%1000)/1000));
-}
-
-class node {
-
-  private:
-
-    int i = 0;  //Backoff counter
-    dequeue<double> frameQueue;  //The frame queue only needs to be a queue of timestamps, unlike LAB1 where we had event objects
-    int k = 0;  //Iterator variable
-
-
-  public:
-
-    node(int popTime, float arriveRate) { //This is the only way that a node can be constructed.
-
-       double currTime = 0;
-
-       while (currTime < popTime) {
-         currTime += expVar(arriveRate);
-         frameQueue.push_back(currTime);
-       }
-    }
-
-    double next() {
-      if (frameQueue.empty()) {
-        return T + 10;  //A value higher than the simulation time to indicate queue is empty numerically and avoid null errors.
-      } else {
-        return frameQueue.front();
-      }
-    }
-
-    void send() { //De-queue the next frame successfully and therefore also reset the collision counter.
-      frameQueue.pop_front();
-      i = 0;
-    }
-
-    bool isEmpty() {return frameQueue.empty();}
-
-    bool backOff(double propTime) {  //We need to input a "base time" to account for the propagation delay.
-
-      ++i;
-
-      if (i > 10) {
-        frameQueue.pop_front();
-        i = 0;
-        return false;
-      } else {
-        k = 0;
-        frameQueue[0] = (double)(rand() % (pow(2, i)-2) + 1)/R + propTime; //Returns random number in [1,(2^i)-1], inclusive
-        while (k < frameQueue.size()) {
-          ++k;
-          if (frameQueue[k] <= frameQueue[0]) {
-            frameQueue[k] = frameQueue[0];
-          }
-        }
-        k = 0;
-        return true;
-      }
-
-    }
-
-    bool wait(double waitTime) { //Makes the node wait until the channel is clear of another transmission
-      k = 0;
-      frameQueue[0] = waitTime; //Returns random number in [1,(2^i)-1], inclusive
-      ++k;
-      while (k < frameQueue.size()) {
-        ++k;
-        if (frameQueue[k] <= frameQueue[0]) {
-          frameQueue[k] = frameQueue[0];
-        }
-      }
-      k = 0;
-      return true;
-    }
-
-};
-
-
-int findMin(vector<node> network) { //This function finds the index of the node with the next smallest arrival time
+//Finds the index of the node with the lowest arrival time
+int nextTransmitter(vector<node> LAN) {
   int min = 0;
-
-  for (int i = 0; i < network.size(); ++i) {
-    if (network[i].next() < network[min].next()) {
-      min = i;
+  bool empty = LAN[min].isEmpty();
+  for (int i = 1; i < LAN.size(); i++) {
+    if (!LAN[i].isEmpty()) {
+      empty = false;
+      if (LAN[min].isEmpty() || LAN[i].next() < LAN[min].next()) {
+        min = i;
+      }
     }
+  }
+  if (empty) {
+    return -1;
   }
   return min;
 }
 
 int main(int argc, char* argv[]) {
-
-  int initTime = (unsigned)time(nullptr);
-
+  int initTime = (unsigned) time(nullptr);
   srand(initTime);  //Initialize seed for pseudorandom uniform generator
 
-  N = stoi(argv[1]);  //Number of nodes
-  A = stof(argv[2]);  //Average arrival rate for each node's buffer
-  T = stoi(argv[3]);
-  R = 1000000;  //Speed, in bit/s
-  L = 1500;  //Packet lengths, in bits
-  D = 10;  //Distance between nodes on channel, in metres
-  S = 200000000;  //Propagation speed, in m/s
+  int N = stoi(argv[1]);    //Number of nodes
+  float A = stof(argv[2]);  //Average arrival rate (packets/s)
+  int T = stoi(argv[3]);    //Simulation time (s)
+  const int R = 1000000;    //Channel speed (bits/s)
+  const int L = 1500;       //Packet length (bits)
+  const int D = 10;         //Distance between adjacent nodes (m)
+  const int S = 200000000;  //Propagation speed (m/s)
 
-  double propTime = (double)D/S;  //Propagation time between two adjacent nodes, pre-computed.
-  double transTime = (double)L/R;
+  double propTime = (double) D/S;
+  double transTime = (double) L/R;
 
   int numAttempts = 0;
   int numSuccesses = 0;
   int numDropped = 0;
 
+  //Populate the queues of all nodes until T seconds.
   vector<node> LAN;
-
-  for (int i = 0; i < N; i++) {  //Pre-simulation, populate the queues of all nodes until T seconds.
-    LAN.push_back(node(T, A));
+  for (int i = 0; i < N; i++) {
+    LAN.push_back(node(A, T, R));
   }
 
-  double simTime = 0;
+  vector<int> collisions;  //Indices of all nodes involved in a collision
+  int transmitter = nextTransmitter(LAN); //The index of the node trying to send
 
-  int sender = findMin(LAN); //The index of the node trying to send
+  while (transmitter != -1) {
+    numAttempts++;
+    // cout << transmitter << ": " << LAN[transmitter].next() << endl;
 
-  int maxProp = 0;  //Maximum distance (in tens of metres) from sender to a colliding node. This is used as the base backoff time for each node in the collision event.
-
-  vector<int> collidedNodes;  //Indexes of nodes that will experience a collision.
-
-  while ((LAN[sender].next()) < T) {
-
-    maxProp = 0;
-
-    for (int g = 0; g < LAN.size(); g++) {
-
-      if (LAN[g].next() <= (LAN[sender].next() + (abs(sender - g) * propTime))) { //Case that the first bit will arrive at a node while that node is sending (collision)
-
-        collidedNodes.push_back(g);
-
-        if (abs(sender - g) > maxProp) {
-          maxProp = abs(sender - g);
-        }
-
-      }
-
-    }
-
-    for (int g = 0; g < collidedNodes.size(); g++) {  //Initiate the backoff procedure for each node caught in the collision
-      if (!(LAN[collidedNodes[g]].backOff((double)maxProp * propTime))) {  //This must be in a loop separate from the collision detection loop because we don't know the timestampt to start the backoff until we know all nodes involved in the collision!
-        ++numDropped;
+    //Check for collisions
+    for (int i = 0; i < LAN.size(); i++) {
+      int distance = abs(transmitter - i);
+      if (distance > 0 && !LAN[i].isEmpty() && LAN[i].next() <= LAN[transmitter].next() + distance*propTime) {
+        collisions.push_back(i);
+        LAN[i].collide();
       }
     }
 
-    //if maxProp == 0 after the collision detection loop, it must be the case that there is no collision at all.
-
-    if (!maxProp) { //must be the case if there is no collision
-
-      for (int g = 0; g < LAN.size(); g++) {
-        if ((LAN[g].next() <= LAN[sender].next() + (abs(g - sender)*propTime) + transTime) && g != sender) {  //Case where packets arrive at nodes when channel is busy.
-          LAN[g].wait(LAN[sender].next() + (abs(g - sender) + transTime));
+    if (collisions.empty()) {
+      LAN[transmitter].send();
+      numSuccesses++;
+      for (int i = 0; i < LAN.size(); i++) {
+        int distance = abs(transmitter - i);
+        if (distance > 0 && !LAN[i].isEmpty() && LAN[i].next() > LAN[transmitter].next() + distance*propTime && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
+          LAN[i].wait(LAN[transmitter].next() + distance*propTime + transTime);
         }
       }
-
+    } else {
+      collisions.push_back(transmitter);
+      LAN[transmitter].collide();
+      for (int i = 0; i < collisions.size(); i++) {
+        if (!LAN[collisions[i]].backOff()) {
+          numDropped++;
+        }
+      }
     }
 
-    collidedNodes.clear();
-    sender = findMin(LAN);  //Find the attempting sender for the next loop
+    collisions.clear();
+    transmitter = nextTransmitter(LAN);  //Find the attempting transmitter for the next loop
   }
 
-
-  return 0;
+  cout << "Attempts: " << numAttempts << endl;
+  cout << "Successes: " << numSuccesses << endl;
+  cout << "Dropped: " << numDropped << endl;
 }
