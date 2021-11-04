@@ -60,46 +60,49 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < N[j]; i++) {
       LAN.push_back(node(A, T, R));
     }
+
+    double propTimeIndex[N[j]];
+
+    for (int i = 0; i < N[j]; ++i) {  //To save time and not do astronomical amounts of double-precision floating point computations
+      propTimeIndex[i] = (double) i * propTime; //Functions accessing an element propTimeIndex[j] are asking for the propagation delay for a distance 10*j meters
+    }
+
     // map<int, double> collisions;  //Indices of all nodes involved in a collision
     
     int transmitter = nextTransmitter(LAN); //The index of the node trying to send
 
     while (LAN[transmitter].next() < T) {
       numAttempts++;
-      // cout << transmitter << ": " << LAN[transmitter].next() << endl;
-
-      //Check for collisions
       int maxDist;
       for (int i = 0; i < LAN.size(); i++) {
         int distance = abs(transmitter - i);
-        if (distance > 0 && !LAN[i].isEmpty() && LAN[i].next() <= (LAN[transmitter].next() + distance*propTime)) {
-          //numAttempts++;
+        if (distance > 0 && !LAN[i].isEmpty() && LAN[i].next() <= (LAN[transmitter].next() + propTimeIndex[distance])) {
+          numAttempts++;
           collisions.push_back(i);
           LAN[i].collide();
+          LAN[i].backOff(propTimeIndex[distance]);
+          numDropped++;
           maxDist = max(maxDist, distance);
-          //cout << "Node " << transmitter << " collides with " << i << ". " << LAN[transmitter].next() << " " << LAN[i].next() << endl;
         }
       }
 
       if (collisions.empty()) {
-        //cout << "Node " << transmitter << " Successful" << endl;
         for (int i = 0; i < LAN.size(); i++) {
           int distance = abs(transmitter - i);
-          if (!LAN[i].isEmpty() &&/* LAN[i].next() > LAN[transmitter].next() + distance*propTime &&*/ LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
-          // if (!LAN[i].isEmpty() && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
-            LAN[i].wait(LAN[transmitter].next() + distance*propTime + transTime);
+          if (LAN[i].next() < LAN[transmitter].next() + propTimeIndex[distance] + transTime) {
+            LAN[i].wait(LAN[transmitter].next() + propTimeIndex[distance] + transTime);
           }
         }
         LAN[transmitter].send();
         numSuccesses++;
       } else {
         LAN[transmitter].collide();
-        LAN[transmitter].backOff((double)maxDist * propTime);
-        for (int i = 0; i < collisions.size() - 1; i++) {
-          if (!LAN[collisions[i]].backOff((double)abs(i - transmitter)*propTime)) {
+        LAN[transmitter].backOff(propTimeIndex[maxDist]);
+        /*for (int i = 0; i < collisions.size() - 1; i++) {
+          if (!LAN[collisions[i]].backOff(propTimeIndex[abs(i - transmitter)])) {
             numDropped++;
           }
-        }
+        }*/
       }
 
       collisions.clear();
