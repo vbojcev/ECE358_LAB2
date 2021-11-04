@@ -53,7 +53,7 @@ bool node::backOff(double baseTime) {
     return false;
   }
 
-  double delay = baseTime + ((double) (rand() % (int) pow(2, collisions))*512)/(double) R + frameQueue.front();
+  double delay = baseTime + ((double) (rand() % (int) pow(2, collisions))*512)/(double)R + frameQueue.front();
   wait(delay);
   return true;
 }
