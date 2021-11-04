@@ -10,4 +10,4 @@ node.o: node.cpp
 	g++ -c node.cpp
 
 clean:
-	rm -f *.o csma_p
+	rm -f *.o *.txt *.png csma_p
