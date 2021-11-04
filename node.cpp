@@ -24,10 +24,6 @@ node::node(float A, int T, int R) {
   }
 }
 
-int node::size() {
-  return frameQueue.size();
-}
-
 //Returns timestamp of next packet
 double node::next() {
   if (frameQueue.empty()) {

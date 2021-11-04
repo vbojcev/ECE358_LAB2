@@ -11,7 +11,6 @@ class node {
 
   public:
     node(float A, int T, int R);
-    int size();
     double next();
     void send();
     bool isEmpty();

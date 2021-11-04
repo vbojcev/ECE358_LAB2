@@ -55,11 +55,6 @@ int main(int argc, char* argv[]) {
       LAN.push_back(node(A, T, R));
     }
 
-    int size = 0;
-    for (int i = 0; i < LAN.size(); i++) {
-      size += LAN[i].size();
-    }
-
     // map<int, double> collisions;  //Indices of all nodes involved in a collision
     vector<int> collisions;  //Indices of all nodes involved in a collision
     int transmitter = nextTransmitter(LAN); //The index of the node trying to send
@@ -74,6 +69,7 @@ int main(int argc, char* argv[]) {
         int distance = abs(transmitter - i);
         if (distance > 0 && !LAN[i].isEmpty() && LAN[i].next() <= LAN[transmitter].next() + distance*propTime) {
           // collisions[i] = distance*propTime;
+          numAttempts++;
           collisions.push_back(i);
           LAN[i].collide();
           maxPropTime = max(maxPropTime, distance*propTime);
@@ -85,8 +81,8 @@ int main(int argc, char* argv[]) {
         numSuccesses++;
         for (int i = 0; i < LAN.size(); i++) {
           int distance = abs(transmitter - i);
-          // if (!LAN[i].isEmpty() && LAN[i].next() > LAN[transmitter].next() + distance*propTime && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
-          if (!LAN[i].isEmpty() && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
+          if (!LAN[i].isEmpty() && LAN[i].next() > LAN[transmitter].next() + distance*propTime && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
+          // if (!LAN[i].isEmpty() && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
             LAN[i].wait(LAN[transmitter].next() + distance*propTime + transTime);
           }
         }
@@ -118,7 +114,6 @@ int main(int argc, char* argv[]) {
     cout << "Attempts: " << numAttempts << endl;
     cout << "Successes: " << numSuccesses << endl;
     cout << "Dropped: " << numDropped << endl;
-    cout << "Size: " << size << endl;
     cout << "Efficiency: " << efficiency << endl << endl;
   }
 
