@@ -5,6 +5,9 @@
 #include <map>
 #include "node.h"
 
+
+//TEST
+
 using namespace std;
 
 //Finds the index of the node with the lowest arrival time
