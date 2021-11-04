@@ -2,6 +2,7 @@
 #include <vector>
 #include <queue>
 #include <fstream>
+#include <map>
 #include "node.h"
 
 using namespace std;
@@ -59,6 +60,7 @@ int main(int argc, char* argv[]) {
       size += LAN[i].size();
     }
 
+    // map<int, double> collisions;  //Indices of all nodes involved in a collision
     vector<int> collisions;  //Indices of all nodes involved in a collision
     int transmitter = nextTransmitter(LAN); //The index of the node trying to send
 
@@ -67,11 +69,14 @@ int main(int argc, char* argv[]) {
       // cout << transmitter << ": " << LAN[transmitter].next() << endl;
 
       //Check for collisions
+      double maxPropTime;
       for (int i = 0; i < LAN.size(); i++) {
         int distance = abs(transmitter - i);
         if (distance > 0 && !LAN[i].isEmpty() && LAN[i].next() <= LAN[transmitter].next() + distance*propTime) {
+          // collisions[i] = distance*propTime;
           collisions.push_back(i);
           LAN[i].collide();
+          maxPropTime = max(maxPropTime, distance*propTime);
         }
       }
 
@@ -80,15 +85,24 @@ int main(int argc, char* argv[]) {
         numSuccesses++;
         for (int i = 0; i < LAN.size(); i++) {
           int distance = abs(transmitter - i);
-          if (distance > 0 && !LAN[i].isEmpty() && LAN[i].next() > LAN[transmitter].next() + distance*propTime && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
+          // if (!LAN[i].isEmpty() && LAN[i].next() > LAN[transmitter].next() + distance*propTime && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
+          if (!LAN[i].isEmpty() && LAN[i].next() < LAN[transmitter].next() + distance*propTime + transTime) {
             LAN[i].wait(LAN[transmitter].next() + distance*propTime + transTime);
           }
         }
       } else {
+        // collisions[transmitter] = maxPropTime;
         collisions.push_back(transmitter);
         LAN[transmitter].collide();
+        // for (int i = 0; i < LAN.size(); i++) {
+        //   if (collisions.find(i) != collisions.end()) {
+        //     if (!LAN[i].backOff(collisions[i])) {
+        //       numDropped++;
+        //     }
+        //   }
+        // }
         for (int i = 0; i < collisions.size(); i++) {
-          if (!LAN[collisions[i]].backOff()) {
+          if (!LAN[collisions[i]].backOff(maxPropTime)) {
             numDropped++;
           }
         }
@@ -98,13 +112,14 @@ int main(int argc, char* argv[]) {
       transmitter = nextTransmitter(LAN);  //Find the attempting transmitter for the next loop
     }
 
+    double efficiency = numSuccesses / (double) numAttempts;
+    output << N[j] << " " << efficiency << "\n";
+
     cout << "Attempts: " << numAttempts << endl;
     cout << "Successes: " << numSuccesses << endl;
     cout << "Dropped: " << numDropped << endl;
-    cout << "Size: " << size << endl << endl;
-
-    double efficiency = numSuccesses / (double) (numSuccesses + numDropped);
-    output << N[j] << " " << efficiency << "\n";
+    cout << "Size: " << size << endl;
+    cout << "Efficiency: " << efficiency << endl << endl;
   }
 
   output.close();
