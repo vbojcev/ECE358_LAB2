@@ -27,7 +27,7 @@ node::node(float A, int T, int R) {
 //Returns timestamp of next packet
 double node::next() {
   if (frameQueue.empty()) {
-    return -1;
+    return T+1000;
   }
   return frameQueue.front();
 }
@@ -57,10 +57,15 @@ bool node::backOff(double baseTime) {
 }
 
 //Pushes all packets back to delay time
-void node::wait(double delay) { //Makes the node wait until the channel is clear of another transmission
+void node::wait(double delay) { //Makes the node wait until the channel is clear of another transmission, also used for propagation delay.
   int i = 0;
   while (i < frameQueue.size() && frameQueue[i] < delay) {
     frameQueue[i] = delay;
     i++;
   }
 }
+
+int node::getSize() {
+  return frameQueue.size();
+}
+

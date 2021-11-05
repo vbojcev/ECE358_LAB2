@@ -17,4 +17,5 @@ class node {
     void collide();
     bool backOff(double baseTime);
     void wait(double delay);
+    int getSize();
 };
