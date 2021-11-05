@@ -80,11 +80,13 @@ int main(int argc, char* argv[]) {
       for (int i = 0; i < LAN.size(); i++) {
         int distance = abs(transmitter - i);
         if (distance > 0 && !LAN[i].isEmpty() && LAN[i].next() <= (LAN[transmitter].next() + propTimeIndex[distance])) {
-          numAttempts++;
+          //numAttempts++;
           collisions.push_back(i);
           LAN[i].collide();
-          LAN[i].backOff(propTimeIndex[distance]);
-          numDropped++;
+          if (!LAN[i].backOff(propTimeIndex[distance])){
+            ++numDropped;
+          }
+          
           maxDist = max(maxDist, distance);
         }
       }
@@ -112,7 +114,7 @@ int main(int argc, char* argv[]) {
       transmitter = nextTransmitter(LAN);  //Find the attempting transmitter for the next loop
     }
 
-    double efficiency = numSuccesses / (double) numAttempts;
+    float efficiency = (float) numSuccesses / (numAttempts + numDropped) ;
     output << N[j] << " " << efficiency << "\n";
 
     cout << "Attempts: " << numAttempts << endl;
