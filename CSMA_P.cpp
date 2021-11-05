@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
   double propTime = (double) D/S;
   double transTime = (double) L/R;
 
-  cout << propTime << endl;
+  cout << "hello3" << endl;
 
   vector<node> LAN;
 
@@ -79,14 +79,13 @@ int main(int argc, char* argv[]) {
       int maxDist = 0;
       for (int i = 0; i < LAN.size(); i++) {
         int distance = abs(transmitter - i);
-        if (distance > 0 && LAN[i].next() <= (LAN[transmitter].next() + propTimeIndex[distance])) {
+        if (i != transmitter && LAN[i].next() <= (LAN[transmitter].next() + propTimeIndex[distance])) {
           numAttempts++;
           collisions.push_back(i);
           LAN[i].collide();
-          if (!LAN[i].backOff(propTimeIndex[distance])){
+          if (!LAN[i].backOff(propTimeIndex[distance] + LAN[transmitter].next())){
             ++numDropped;
           }
-          
           maxDist = max(maxDist, distance);
         }
       }
@@ -94,7 +93,7 @@ int main(int argc, char* argv[]) {
       if (collisions.empty()) {
         for (int i = 0; i < LAN.size(); i++) {
           int distance = abs(transmitter - i);
-          if (/*i != transmitter &&*/ LAN[i].next() < LAN[transmitter].next() + propTimeIndex[distance] + transTime) {
+          if (i != transmitter && LAN[i].next() < LAN[transmitter].next() + propTimeIndex[distance] + transTime) {
             LAN[i].wait(LAN[transmitter].next() + propTimeIndex[distance] + transTime);
           }
         }
@@ -102,7 +101,9 @@ int main(int argc, char* argv[]) {
         numSuccesses++;
       } else {
         LAN[transmitter].collide();
-        LAN[transmitter].backOff(propTimeIndex[maxDist]);
+        if (!LAN[transmitter].backOff(propTimeIndex[maxDist] + LAN[transmitter].next())) {
+          ++numDropped;
+        }
       }
 
       collisions.clear();

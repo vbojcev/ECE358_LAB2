@@ -48,11 +48,15 @@ void node::collide() {
 
 //Back off for a random time
 bool node::backOff(double baseTime) {
+
+  int k = rand() % (int)pow(2, collisions);
+
   if (collisions > 10) {
+    wait(baseTime + ((double) k*512)/(double)R);
     send();
     return false;
   }
-  wait(baseTime + ((double) (rand() % pow(2, collisions))*512)/(double)R + frameQueue.front());
+  wait(baseTime + ((double) k*512)/(double)R);
   return true;
 }
 
