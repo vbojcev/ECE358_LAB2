@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
       if (collisions.empty()) {
         for (int i = 0; i < LAN.size(); i++) {
           int distance = abs(transmitter - i);
-          if (i != transmitter && LAN[i].next() < LAN[transmitter].next() + propTimeIndex[distance] + transTime) {
+          if (/*i != transmitter &&*/ LAN[i].next() < LAN[transmitter].next() + propTimeIndex[distance] + transTime) {
             LAN[i].wait(LAN[transmitter].next() + propTimeIndex[distance] + transTime);
           }
         }
