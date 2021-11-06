@@ -5,10 +5,11 @@ compileP: CSMA_P.cpp node.cpp
 
 runP: csma_p
 
-	./csma_p 5 300
+	./csma_p
 
-plotP:	graph
-	gnuplot graph
+plotP:	Efficiency_P_Graph.txt Throughput_P_Graph.txt
+	gnuplot Efficiency_P_Graph.txt
+	gnuplot Throughput_P_Graph.txt_
 
 cleanP: 
-	rm -f *.o *.txt *.png csma_p
+	rm -f *.o E_P.txt TP_P.txt *.png csma_p

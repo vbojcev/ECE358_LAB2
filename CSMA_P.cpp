@@ -5,9 +5,6 @@
 #include <map>
 #include "node.h"
 
-
-//TEST
-
 using namespace std;
 
 //Finds the index of the node with the lowest arrival time
@@ -32,13 +29,15 @@ int main(int argc, char* argv[]) {
   int initTime = (unsigned) time(nullptr);
   srand(initTime);  //Initialize seed for pseudorandom uniform generator
 
-  ofstream output;
-  output.open("data.txt");
+  ofstream outputE;
+  ofstream outputTP;
+  outputE.open("E_P.txt");
+  outputTP.open("TP_P.txt");
 
   // int N = stoi(argv[1]);    //Number of nodes
   int N[5] = {20, 40, 60, 80, 100};  //Number of nodes
-  float A = stof(argv[1]);           //Average arrival rate (packets/s)
-  int T = stoi(argv[2]);             //Simulation time (s)
+  float A[3] = {5, 12, 20};           //Average arrival rate (packets/s)
+  int T = 300;             //Simulation time (s)
   const int R = 1000000;             //Channel speed (bits/s)
   const int L = 1500;                //Packet length (bits)
   const int D = 10;                  //Distance between adjacent nodes (m)
@@ -47,81 +46,92 @@ int main(int argc, char* argv[]) {
   double propTime = (double) D/S;
   double transTime = (double) L/R;
 
-  cout << "hello3" << endl;
-
   vector<node> LAN;
 
   vector<int> collisions;  //Indices of all nodes involved in a collision
 
-  for (int j = 0; j < 5; j++) {
-    int numAttempts = 0;
-    int numSuccesses = 0;
-    int numDropped = 0;
+  for (int j = 0; j < 5; j++) { //Loop through N range
 
-    //Populate the queues of all nodes until T seconds.
-    
-    for (int i = 0; i < N[j]; i++) {
-      LAN.push_back(node(A, T, R));
-    }
+    outputE << N[j];
+    outputTP << N[j];
 
-    double propTimeIndex[N[j]];
+    for (int m = 0; m < 3; m++) { //Loop through range of arrival rates
 
-    for (int i = 0; i < N[j]; ++i) {  //To save time and not do astronomical amounts of double-precision floating point computations
-      propTimeIndex[i] = (double) i * propTime; //Functions accessing an element propTimeIndex[j] are asking for the propagation delay for a distance 10*j meters
-    }
+      int numAttempts = 0;
+      int numSuccesses = 0;
+      int numDropped = 0;
 
-    // map<int, double> collisions;  //Indices of all nodes involved in a collision
-    
-    int transmitter = nextTransmitter(LAN); //The index of the node trying to send
-
-    while (LAN[transmitter].next() < T) {
-      numAttempts++;
-      int maxDist = 0;
-      for (int i = 0; i < LAN.size(); i++) {
-        int distance = abs(transmitter - i);
-        if (i != transmitter && LAN[i].next() <= (LAN[transmitter].next() + propTimeIndex[distance])) {
-          numAttempts++;
-          collisions.push_back(i);
-          LAN[i].collide();
-          if (!LAN[i].backOff(propTimeIndex[distance] + LAN[transmitter].next())){
-            ++numDropped;
-          }
-          maxDist = max(maxDist, distance);
-        }
+      //Populate the queues of all nodes until T seconds.
+      
+      for (int i = 0; i < N[j]; i++) {
+        LAN.push_back(node(A[m], T, R));
       }
 
-      if (collisions.empty()) {
+      double propTimeIndex[N[j]];
+
+      for (int i = 0; i < N[j]; i++) {  //To save time and not do astronomical amounts of double-precision floating point computations
+        propTimeIndex[i] = (double) i * propTime; //Functions accessing an element propTimeIndex[j] are asking for the propagation delay for a distance 10*j meters
+      }
+      
+      int transmitter = nextTransmitter(LAN); //The index of the node trying to send
+
+      while (LAN[transmitter].next() < T) {
+        numAttempts++;  //The sending node "attempts" to transmit
+        int maxDist = 0;
         for (int i = 0; i < LAN.size(); i++) {
           int distance = abs(transmitter - i);
-          if (i != transmitter && LAN[i].next() < LAN[transmitter].next() + propTimeIndex[distance] + transTime) {
-            LAN[i].wait(LAN[transmitter].next() + propTimeIndex[distance] + transTime);
+          if (i != transmitter && LAN[i].next() <= (LAN[transmitter].next() + propTimeIndex[distance])) {
+            numAttempts++;
+            collisions.push_back(i);  //Adding to the list of nodes that "tranmitter" collides with for this frame
+            LAN[i].collide();
+            if (!LAN[i].backOff(propTimeIndex[distance] + LAN[transmitter].next())){
+              ++numDropped;
+            }
+            maxDist = max(maxDist, distance);
           }
         }
-        LAN[transmitter].send();
-        numSuccesses++;
-      } else {
-        LAN[transmitter].collide();
-        if (!LAN[transmitter].backOff(propTimeIndex[maxDist] + LAN[transmitter].next())) {
-          ++numDropped;
+
+        if (collisions.empty()) {
+          for (int i = 0; i < LAN.size(); i++) {
+            int distance = abs(transmitter - i);
+            if (i != transmitter && LAN[i].next() < LAN[transmitter].next() + propTimeIndex[distance] + transTime) {
+              LAN[i].wait(LAN[transmitter].next() + propTimeIndex[distance] + transTime);
+            }
+          }
+          LAN[transmitter].send();
+          numSuccesses++;
+        } else {
+          LAN[transmitter].collide();
+          if (!LAN[transmitter].backOff(propTimeIndex[maxDist] + LAN[transmitter].next())) {
+            ++numDropped;
+          }
         }
+
+        collisions.clear();
+        transmitter = nextTransmitter(LAN);  //Find the attempting transmitter for the next loop
       }
 
-      collisions.clear();
-      transmitter = nextTransmitter(LAN);  //Find the attempting transmitter for the next loop
+      float efficiency = (float) numSuccesses / numAttempts;
+      float throughput = (float) numSuccesses * L / T;
+      outputE << " " << efficiency;
+      outputTP << " " << (float)throughput/R;
+
+      cout << "Attempts: " << numAttempts << endl;
+      cout << "Successes: " << numSuccesses << endl;
+      cout << "Dropped: " << numDropped << endl;
+      cout << "Efficiency: " << efficiency << endl << endl;
+
+      LAN.clear();
+
     }
 
-    float efficiency = (float) numSuccesses / (numAttempts + numDropped) ;
-    output << N[j] << " " << efficiency << "\n";
-
-    cout << "Attempts: " << numAttempts << endl;
-    cout << "Successes: " << numSuccesses << endl;
-    cout << "Dropped: " << numDropped << endl;
-    cout << "Efficiency: " << efficiency << endl << endl;
-
-    LAN.clear();
+    outputE << "\n";
+    outputTP << "\n";
+    
   }
 
-  output.close();
+  outputE.close();
+  outputTP.close();
 
   cout << "Finished. Runtime is " << ((unsigned)time(nullptr) - initTime)/60 << " minutes." << endl;
 }

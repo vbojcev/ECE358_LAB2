@@ -1,0 +1,11 @@
+Set title "Efficiency vs Number of Nodes (Persistent)"
+set xlabel "Nodes"
+set ylabel "Efficiency"
+set xrange [20:100]
+set yrange [0:1]
+unset key
+set term png
+set output "E_P.png"
+plot	'E_P.txt' using 1:2 with linespoint pointtype 7,\
+	'E_P.txt' using 1:3 with linespoint pointtype 7,\
+	'E_P.txt' using 1:4 with linespoint pointtype 7,\

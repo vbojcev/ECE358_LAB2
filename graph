@@ -1,9 +1,0 @@
-set title "Efficiency vs Number of Nodes"
-set xlabel "Nodes"
-set ylabel "Efficiency"
-set xrange [20:100]
-set yrange [0:1]
-unset key
-set term png
-set output "graph.png"
-plot 'data.txt' with linespoint pointtype 7
