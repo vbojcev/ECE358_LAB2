@@ -52,7 +52,7 @@ bool node::backOff(double baseTime) {
   int k = rand() % (int)pow(2, collisions);
 
   if (collisions > 10) {
-    wait(baseTime + ((double) k*512)/(double)R);
+    //wait(baseTime + ((double) k*512)/(double)R);
     send();
     return false;
   }
