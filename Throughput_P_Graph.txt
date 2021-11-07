@@ -1,4 +1,4 @@
-Set title "Throughput vs Number of Nodes (Persistent)"
+set title "Throughput vs Number of Nodes (Persistent)"
 set xlabel "Nodes"
 set ylabel "Throughput (% of 1 Mbps)"
 set xrange [20:100]

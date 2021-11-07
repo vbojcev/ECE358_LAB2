@@ -9,7 +9,7 @@ runP: csma_p
 
 plotP:	Efficiency_P_Graph.txt Throughput_P_Graph.txt
 	gnuplot Efficiency_P_Graph.txt
-	gnuplot Throughput_P_Graph.txt_
+	gnuplot Throughput_P_Graph.txt
 
 cleanP: 
 	rm -f *.o E_P.txt TP_P.txt *.png csma_p
