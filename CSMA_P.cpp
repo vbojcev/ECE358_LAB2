@@ -63,17 +63,17 @@ int main(int argc, char* argv[]) {
       int numDropped = 0;
 
       //Populate the queues of all nodes until T seconds.
-      
-      for (int i = 0; i < N[j]; i++) {
-        LAN.push_back(node(A[m], T, R));
-      }
 
       double propTimeIndex[N[j]];
-
-      for (int i = 0; i < N[j]; i++) {  //To save time and not do astronomical amounts of double-precision floating point computations
+      for (int i = 0; i < N[j]; i++) {
+        LAN.push_back(node(A[m], T, R));
         propTimeIndex[i] = (double) i * propTime; //Functions accessing an element propTimeIndex[j] are asking for the propagation delay for a distance 10*j meters
       }
-      
+
+      // for (int i = 0; i < N[j]; i++) {  //To save time and not do astronomical amounts of double-precision floating point computations
+      //   propTimeIndex[i] = (double) i * propTime; //Functions accessing an element propTimeIndex[j] are asking for the propagation delay for a distance 10*j meters
+      // }
+
       int transmitter = nextTransmitter(LAN); //The index of the node trying to send
 
       while (LAN[transmitter].next() < T) {
@@ -92,8 +92,9 @@ int main(int argc, char* argv[]) {
         if (collisions.empty()) {
           for (int i = 0; i < LAN.size(); i++) {
             int distance = abs(transmitter - i);
-            if (LAN[i].next() <= LAN[transmitter].next() + propTimeIndex[distance] + transTime) {
-              LAN[i].wait(LAN[transmitter].next() + propTimeIndex[distance] + transTime); //Nodes (including the sender!) must wait until the entire packet has passed.
+            double delay = LAN[transmitter].next() + propTimeIndex[distance] + transTime;
+            if (delay < T && LAN[i].next() <= delay) {
+              LAN[i].wait(delay); //Nodes (including the sender!) must wait until the entire packet has passed.
             }
           }
           LAN[transmitter].send();
@@ -102,10 +103,10 @@ int main(int argc, char* argv[]) {
           LAN[transmitter].collide();
           collisions.push_back(transmitter);
           for (int i = 0; i < collisions.size(); i++) {
-            if (!LAN[collisions[i]].backOff(propTimeIndex[maxDist] + LAN[transmitter].next())) {
-            ++numDropped;
-            //STRONG ASSUMPTION: backoff for each node in the collision is based off the maximum propagation time
-            //involved in the collision.
+            if (!LAN[collisions[i]].backOff(propTimeIndex[maxDist] + LAN[transmitter].next(), T)) {
+              ++numDropped;
+              //STRONG ASSUMPTION: backoff for each node in the collision is based off the maximum propagation time
+              //involved in the collision.
             }
           }
         }
@@ -133,7 +134,7 @@ int main(int argc, char* argv[]) {
 
     outputE << "\n";
     outputTP << "\n";
-    
+
   }
 
   outputE.close();

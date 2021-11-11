@@ -15,7 +15,7 @@ class node {
     void send();
     bool isEmpty();
     void collide();
-    bool backOff(double baseTime);
+    bool backOff(double baseTime, int T);
     void wait(double delay);
     int getSize();
 };
