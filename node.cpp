@@ -42,10 +42,6 @@ bool node::isEmpty() {
   return frameQueue.empty();
 }
 
-void node::collide() {
-  collisions++;
-}
-
 //Back off for a random time
 bool node::backOff(double baseTime) {
 
