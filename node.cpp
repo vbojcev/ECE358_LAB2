@@ -47,20 +47,18 @@ void node::collide() {
 }
 
 //Back off for a random time
-bool node::backOff(double baseTime, int T) {
+bool node::backOff(double baseTime) {
+
+  collisions++;
 
   int k = rand() % (int)pow(2, collisions);
 
   if (collisions > 10) {
-    //wait(baseTime + ((double) k*512)/(double)R);
     send();
+    wait(baseTime);
     return false;
   }
-
-  double delay = baseTime + ((double) k*512)/(double)R;
-  if (delay < T) {
-    wait(delay);
-  }
+  wait(baseTime + ((double) k*512)/(double)R);
   return true;
 }
 
@@ -76,3 +74,4 @@ void node::wait(double delay) { //Makes the node wait until the channel is clear
 int node::getSize() {
   return frameQueue.size();
 }
+
