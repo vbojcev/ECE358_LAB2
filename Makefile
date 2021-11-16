@@ -11,5 +11,16 @@ plotP:	Efficiency_P_Graph.txt Throughput_P_Graph.txt
 	gnuplot Efficiency_P_Graph.txt
 	gnuplot Throughput_P_Graph.txt
 
-cleanP: 
+cleanP:
 	rm -f *.o E_P.txt TP_P.txt *.png csma_p
+
+compileNP: CSMA_NP.cpp node.cpp
+	g++ -c node.cpp
+	g++ -c CSMA_NP.cpp
+	g++ -o csma_np CSMA_NP.o node.o
+
+runNP: csma_np
+	./csma_np
+
+cleanNP:
+	rm -f *.o E_NP.txt TP_NP.txt *.png csma_np

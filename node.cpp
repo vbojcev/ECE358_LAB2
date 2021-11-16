@@ -64,6 +64,14 @@ bool node::backOff(double baseTime, int T) {
   return true;
 }
 
+void node::npBackOff() {
+  int k = rand() % (int)pow(2, collisions);
+  double delay = next() + ((double) k*512)/(double)R;
+  if (delay < T) {
+    wait(delay);
+  }
+}
+
 //Pushes all packets back to delay time
 void node::wait(double delay) { //Makes the node wait until the channel is clear of another transmission, also used for propagation delay.
   int i = 0;
