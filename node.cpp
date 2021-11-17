@@ -58,8 +58,8 @@ bool node::backOff(double baseTime) {
   return true;
 }
 
-void node::npBackOff() {
-  int k = rand() % (int)pow(2, collisions);
+void node::npBackOff(int npCollisions) {
+  int k = rand() % (int)pow(2, npCollisions);
   wait(next() + ((double) k*512)/(double)R);
 }
 

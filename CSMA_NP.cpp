@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
             double busy = next + propTimeIndex[abs(transmitter - i)] + transTime;
             int npCollisions = 0;
             while (npNext < busy) {
-              LAN[i].npBackOff();
+              LAN[i].npBackOff(npCollisions);
               npCollisions++;
               if (npCollisions > 10) {
                 LAN[i].send();

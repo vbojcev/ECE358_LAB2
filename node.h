@@ -16,7 +16,7 @@ class node {
     bool isEmpty();
     void collide();
     bool backOff(double baseTime);
-    void npBackOff();
+    void npBackOff(int npCollisions);
     void wait(double delay);
     int getSize();
 };
