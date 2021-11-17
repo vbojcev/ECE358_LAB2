@@ -1,0 +1,11 @@
+set title "Throughput vs Number of Nodes (Non-Persistent)"
+set xlabel "Nodes"
+set ylabel "Throughput (% of 1 Mbps)"
+set xrange [20:100]
+set yrange [0:1]
+unset key
+set term png
+set output "TP_NP.png"
+plot	'TP_NP.txt' using 1:2 with linespoint pointtype 7,\
+	'TP_NP.txt' using 1:3 with linespoint pointtype 7,\
+	'TP_NP.txt' using 1:4 with linespoint pointtype 7,\

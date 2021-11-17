@@ -22,5 +22,9 @@ compileNP: CSMA_NP.cpp node.cpp
 runNP: csma_np
 	./csma_np
 
+plotNP:	Efficiency_NP_Graph.txt Throughput_NP_Graph.txt
+	gnuplot Efficiency_NP_Graph.txt
+	gnuplot Throughput_NP_Graph.txt
+
 cleanNP:
 	rm -f *.o E_NP.txt TP_NP.txt *.png csma_np

@@ -60,10 +60,7 @@ bool node::backOff(double baseTime) {
 
 void node::npBackOff() {
   int k = rand() % (int)pow(2, collisions);
-  double delay = next() + ((double) k*512)/(double)R;
-  if (delay < T) {
-    wait(delay);
-  }
+  wait(next() + ((double) k*512)/(double)R);
 }
 
 //Pushes all packets back to delay time
@@ -78,4 +75,3 @@ void node::wait(double delay) { //Makes the node wait until the channel is clear
 int node::getSize() {
   return frameQueue.size();
 }
-
