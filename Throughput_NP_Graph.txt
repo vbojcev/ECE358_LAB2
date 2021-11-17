@@ -6,6 +6,6 @@ set yrange [0:1]
 unset key
 set term png
 set output "TP_NP.png"
-plot	'TP_NP.txt' using 1:2 with linespoint pointtype 7,\
-	'TP_NP.txt' using 1:3 with linespoint pointtype 7,\
-	'TP_NP.txt' using 1:4 with linespoint pointtype 7,\
+plot	'TP_NP.txt' using 1:2 title "A=7" with linespoint pointtype 7 lw 1,\
+	'TP_NP.txt' using 1:3 title "A=7" with linespoint pointtype 7 lw 2,\
+	'TP_NP.txt' using 1:4 title "A=7" with linespoint pointtype 7 lw 3,\
