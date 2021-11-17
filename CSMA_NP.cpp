@@ -77,6 +77,8 @@ int main(int argc, char* argv[]) {
 
       while ((next = LAN[transmitter].next()) < T) {
         numAttempts++;  //The sending node attempts to transmit, this is always incremented
+        LAN[transmitter].resetNP(); //The sending node sees the channel vacant, reset NP counter.
+
         int maxDist = 0;
         for (int i = 0; i < LAN.size(); i++) {
           int distance = abs(transmitter - i);
@@ -92,25 +94,21 @@ int main(int argc, char* argv[]) {
 
         //There IS NOT a collision:
         if (!maxDist) {
+          LAN[transmitter].wait(next + transTime);
+          LAN[transmitter].send();
+          numSuccesses++;
+
           for (int i = 0; i < LAN.size(); i++) {
-            double npNext = LAN[i].next();
-            double busy = next + propTimeIndex[abs(transmitter - i)] + transTime;
-            int npCollisions = 0;
-            while (npNext < busy) {
-              LAN[i].npBackOff(npCollisions);
-              npCollisions++;
-              if (npCollisions > 10) {
-                LAN[i].send();
-                numDroppedNP++;
-                break;
+            if (i != transmitter) {
+              if (!LAN[i].npBackOff(next + propTimeIndex[abs(transmitter - i)] + transTime)) {
+                ++numDroppedNP;
               }
             }
           }
-          LAN[transmitter].send();
-          numSuccesses++;
+          
         } else {
           //Transmitter's collision backoff is calculated separately.
-          //This is because
+          //This is because we can't know the farthest node (maxDist) without looping through all other nodes first
           if (!LAN[transmitter].backOff(propTimeIndex[maxDist] + next)) {
             ++numDropped;
           }
@@ -119,13 +117,15 @@ int main(int argc, char* argv[]) {
       }
 
       //Calculate measurements, output to file
-      float efficiency = (float) numSuccesses / (numAttempts);
+      float efficiency = (float) numSuccesses / (numAttempts + numDroppedNP);
       float throughput = (float) numSuccesses * L / T;
       outputE << " " << efficiency;
       outputTP << " " << (float)throughput/R;
 
       //Display during runtime so we can monitor results and execution speed
       cout << "For N = " << N[j] << ", A = " << A[m] << endl;
+      cout << "Dropped due to busy = " << numDroppedNP << endl;
+      cout << "Number of Collisions = " << numAttempts - numSuccesses << endl;
       cout << "Efficiency: " << efficiency << endl;
       cout << "Throughput: " << throughput/R << endl;
       cout << "Step took " << (unsigned)time(nullptr) - testTime << " seconds." << endl << endl;

@@ -36,6 +36,7 @@ double node::next() {
 void node::send() {
   frameQueue.pop_front();
   collisions = 0;
+  npCounter = 0;
 }
 
 bool node::isEmpty() {
@@ -58,9 +59,36 @@ bool node::backOff(double baseTime) {
   return true;
 }
 
-void node::npBackOff(int npCollisions) {
-  int k = rand() % (int)pow(2, npCollisions);
-  wait(next() + ((double) k*512)/(double)R);
+bool node::npBackOff(double baseTime) {
+
+  if (frameQueue[0] < baseTime) { //Case that packet is queued during transmission
+    ++npCounter;
+
+    int k = rand() % (int)pow(2, npCounter);
+
+    if (npCounter > 10) {
+      send();
+      wait(baseTime);
+      return false;
+    } else {
+
+      while (frameQueue[0] <= baseTime) {
+        int k = rand() % (int)pow(2, npCounter);
+        wait(frameQueue[0] + ((double) k*512)/(double)R);
+        npCounter++;
+        //This loop covers the case that it may take more than one backoff cycle before the channel is not busy.
+        //That case is possible if k is 0, 1, or 2 (since k=3 implies 1536 bit-times which is longer than a packet of 1500 bit-times)
+        if (npCounter > 10) {
+          send();
+          return false;
+        }
+      }
+      return true;
+    }
+  } else {
+    return true;
+  }
+
 }
 
 //Pushes all packets back to delay time
@@ -74,4 +102,8 @@ void node::wait(double delay) { //Makes the node wait until the channel is clear
 
 int node::getSize() {
   return frameQueue.size();
+}
+
+void node::resetNP() {
+  npCounter = 0;
 }

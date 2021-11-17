@@ -5,6 +5,7 @@ using namespace std;
 class node {
   private:
     int collisions;
+    int npCounter;
     int T;
     int R;
     deque<double> frameQueue;
@@ -16,7 +17,8 @@ class node {
     bool isEmpty();
     void collide();
     bool backOff(double baseTime);
-    void npBackOff(int npCollisions);
+    bool npBackOff(double baseTime);
     void wait(double delay);
     int getSize();
+    void resetNP();
 };
