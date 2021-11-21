@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
           numSuccesses++;
         } else {
           //Transmitter's collision backoff is calculated separately.
-          //This is because 
+          //This is because we can't know the farthest colliding node otherwise.
           if (!LAN[transmitter].backOff(propTimeIndex[maxDist] + next)) {
             ++numDropped;
           }
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
       outputTP << " " << (float)throughput/R;
 
       //Display during runtime so we can monitor results and execution speed
-      cout << "For N = " << N[j] << ", A = " << A[m] << endl;
+      cout << "For N = " << N[j] << ", A = " << A[m] << ", T = " << T  << endl;
       cout << "Efficiency: " << efficiency << endl;
       cout << "Throughput: " << throughput/R << endl;
       cout << "Step took " << (unsigned)time(nullptr) - testTime << " seconds." << endl << endl;

@@ -1,16 +1,16 @@
 # LAB 2
 ### ECE 358
 
-```
-make
-```
+Persistent:
 
-```
-./csma_p 7 1000
-./csma_p 10 1000
-./csma_p 20 1000
-```
+	make compileP
+	make runP
+	make plotP
+	make cleanP
 
-```
-make clean
-```
+Non-Persistent:
+
+	make compileNP
+	make runNP
+	make plotNP
+	make cleanNP
